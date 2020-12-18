@@ -4,7 +4,7 @@ namespace Stanford\ProjRhino;
 
 /** @var \Stanford\ProjRhino\ProjRhino $module */
 
-use REDCap;
+
 //require_once 'vendor/autoload.php';
 include_once 'PDFMerger.php';
 
