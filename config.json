@@ -35,6 +35,12 @@
       "type": "checkbox"
     },
     {
+      "key": "url",
+      "name": "Enter the URL for the cups relay",
+      "required": false,
+      "type": "text"
+    },
+    {
       "key": "pdf-events",
       "name": "<b>PDF Events</b><br>Repeating subsettings to define set of forms to print for each event",
       "required": false,
