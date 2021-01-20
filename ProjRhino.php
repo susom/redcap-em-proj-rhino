@@ -36,12 +36,11 @@ class ProjRhino extends \ExternalModules\AbstractExternalModule
         //on save of admin_review form, trigger email to admin to verify the training
         //or Reset to new event instance
         if ($instrument == $current['trigger-form-field']) {
-            $sub = $check_forms[$event_id];
-            $form_field  = $sub['form-field'];
 
-            $this->emDebug("Just saved $instrument in event $event_id and instance $repeat_instance");
+            $this->emDebug("Just saved last instrument, $instrument, in event $event_id and instance $repeat_instance");
 
-            $this->printPatientForms($record, $event_id, $repeat_instance,$current['form-field'],$current['compact-display']);
+
+            $this->triggerPDFPrint($record, $event_id, $current['form-field'],$current['compact-display']);
 
         }
     }
@@ -50,38 +49,10 @@ class ProjRhino extends \ExternalModules\AbstractExternalModule
     /* HELPER METHODS                                                                                                    */
     /***************************************************************************************************************** */
 
-    function printPatientForms($record, $event_id, $instance, $form_list, $compact_display)
+    function triggerPDFPrint($record,$event_id, $form_list, $compact_display)
     {
 
-        $pdf = new \PDFMerger\PDFMerger;
-
-        //list of files to unlink after print
-        $files = array();
-
-        foreach ($form_list as $instrument) {
-            $this->emDebug("Getting pdf for $instrument");
-            $pdf_content = REDCap::getPDF($record, $instrument, $event_id, false, $instance, $compact_display);
-            $temp_name = APP_PATH_TEMP . date('YmdHis') . '_' . $instrument . '.pdf';
-
-            //add to the pdf if not empty
-            if (strlen($pdf_content) > MIN_PDF_STRLEN) {
-                //$module->emDebug("size of pdf is $instrument ".strlen($pdf_content));
-                file_put_contents($temp_name, $pdf_content);
-                $pdf->addPDF($temp_name, 'all');
-                $files[] = $temp_name;
-            }
-        }
-
-
-        ob_start(); //clear out out
-        $pdf->merge('download', $record .  '_' . date('YmdHis') . '.pdf');
-        ob_end_flush();
-
-        //unlink all the files
-        foreach ($files as $file) {
-            //$module->emDebug("Unlinking $file");
-            unlink($file);
-        }
-
+        //call url to trigger print passing in array of instruments ($form_list)
+        $this->emDebug("Triggering the PDF print for record $record in event $event_id with compact_display set to $compact_display");
     }
 }

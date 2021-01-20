@@ -17,16 +17,6 @@
   ],
   "links": {
     "project": [
-      {
-        "name": "Rhino: Download Merged PDF",
-        "icon": "page_white_stack",
-        "url": "PrintPDF.php"
-      },
-      {
-        "name": "Rhino: Get URL Link for PDF Merger",
-        "icon": "gear",
-        "url": "src/DisplayURL.php"
-      }
     ]
   },
   "system-settings": [
