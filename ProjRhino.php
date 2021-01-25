@@ -33,16 +33,26 @@ class ProjRhino extends \ExternalModules\AbstractExternalModule
         }
 
         $current = $check_forms[$event_id];
-        //on save of admin_review form, trigger email to admin to verify the training
-        //or Reset to new event instance
-        if ($instrument == $current['trigger-form-field']) {
-
-            $this->emDebug("Just saved last instrument, $instrument, in event $event_id and instance $repeat_instance");
 
 
-            $this->triggerPDFPrint($record, $event_id, $current['form-field'],$current['compact-display']);
+        //change request: print after every form
+        $form_list = $current['form-field'];
+        $trigger_form = $current['trigger-form-field'];
 
+        if (in_array($instrument, $form_list)) {
+
+
+            if (!isset($trigger_form)) {  //trigger form is not set. print all files in list
+                //print the current form
+                $this->triggerPDFPrint($record, $event_id, array($instrument),$current['compact-display']);
+            } else {
+                if ($instrument == $trigger_form) {
+                    $this->emDebug("Just saved last instrument, $instrument, in event $event_id and instance $repeat_instance");
+                    $this->triggerPDFPrint($record, $event_id, $form_list,$current['compact-display']);
+                }
+            }
         }
+
     }
 
     /*******************************************************************************************************************/

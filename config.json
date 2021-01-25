@@ -55,8 +55,8 @@
         },
         {
           "key": "trigger-form-field",
-          "name": "<b>Select the form to trigger the print (most likely the last in the series for the event.</b>",
-          "required": true,
+          "name": "<b>Select the form to trigger the print (most likely the last in the series for the event.</b><br><br>Leave blank to print the forms as they complete. Selecting one will print the entire list of selected forms in one print command when this form is completed.",
+          "required": false,
           "type": "form-list",
           "repeatable" : false
         },
