@@ -65,7 +65,7 @@ class ProjRhino extends \ExternalModules\AbstractExternalModule
         $event_name = REDCap::getEventNames(true, false,$event_id);
 
         //call url to trigger print passing in array of instruments ($form_list)
-        $this->emDebug("Triggering the PDF print for record $record in event $event_id with compact_display set to $compact_display");
+        $this->emDebug("Triggering the PDF print for record $record in event $event_id with compact_display set to $compact_display", $form_list);
         //$url = 'http://7d9adf5c5ede.ngrok.io';
         $url = $this->getProjectSetting('url');
 
@@ -92,6 +92,8 @@ class ProjRhino extends \ExternalModules\AbstractExternalModule
         //execute post
         $result = curl_exec($ch);
         $status = json_decode($result, true);
+
+        $this->emDebug($status);
 
         //return { "error": "asdf"}
         //{"error":"Missing required input(s) - see logs"}
