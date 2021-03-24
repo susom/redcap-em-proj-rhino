@@ -13,7 +13,7 @@
   "framework-version": 5,
 
   "permissions": [
-    "redcap_save_record"
+    "redcap_survey_complete"
   ],
   "links": {
     "project": [

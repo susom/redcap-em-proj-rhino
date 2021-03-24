@@ -18,7 +18,9 @@ class ProjRhino extends \ExternalModules\AbstractExternalModule
     /* HOOK METHODS                                                                                                    */
     /***************************************************************************************************************** */
 
-    public function redcap_save_record($project_id, $record = NULL, $instrument, $event_id, $group_id = NULL, $survey_hash = NULL, $response_id = NULL, $repeat_instance) {
+    //only print if the survey is complete (since the last survey uses "one section per page'
+    //public function redcap_save_record($project_id, $record = NULL, $instrument, $event_id, $group_id = NULL, $survey_hash = NULL, $response_id = NULL, $repeat_instance) {
+    public function redcap_survey_complete($project_id, $record = NULL, $instrument, $event_id, $group_id = NULL, $survey_hash = NULL, $response_id = NULL, $repeat_instance) {
 
         $trigger_sub_events = $this->getSubSettings('pdf-events');
 
