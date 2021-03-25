@@ -57,6 +57,36 @@ class ProjRhino extends \ExternalModules\AbstractExternalModule
 
     }
 
+    // Hijeck the pdf
+	public function redcap_pdf($project_id, $metadata, $data, $instrument, $record, $event_id, $instance = 1) {
+
+    	$printAllForm = $this->getProjectSetting("print-all-form");
+    	if (!empty($printAllForm) && $printAllForm == $instrument) {
+
+		    // We need to pull ALL data for this event
+		    $params = [
+			    'project_id' => $project_id,
+			    'records' => $record,
+			    'events' => $event_id
+		    ];
+		    $data = \REDCap::getData($params);
+
+		    $hideFormStatus = $this->getProjectSetting("print-all-hide-form-status");
+
+		    // We need to pull all metadata for fields to include
+		    global $Proj;
+			$metadata=[];
+		    foreach ($Proj->metadata as $field_name => $field) {
+			    // Skip field status (could be an option)
+			    if ($hideFormStatus && ($field['field_name'] == $field['form_name'] . "_complete")) continue;
+			    $field['form_name'] = $printAllForm;
+			    $metadata[] = $field;
+		    }
+	    }
+    	return array('metadata'=>$metadata, 'data'=>$data, 'instrument'=>null);
+	}
+
+
     /*******************************************************************************************************************/
     /* HELPER METHODS                                                                                                    */
     /***************************************************************************************************************** */
