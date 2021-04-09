@@ -48,12 +48,6 @@
       "type": "text"
     },
     {
-      "key": "print-all-form",
-      "name": "<b>Print All Form</b> If selected, a PDF export request for this form will return data from ALL forms in the event<br>Use the @HIDDEN-PDF action tag to remove fields",
-      "required": false,
-      "type": "form-list"
-    },
-    {
       "key": "print-all-hide-form-status",
       "name": "<b>Print All Form - Hide form-status fields</b>",
       "required": false,
@@ -86,7 +80,7 @@
           "type": "event-list"
         },
         {
-          "key": "form-field",
+          "key": "forms-to-merge",
           "name": "<b>Select the forms you want merged into the PDF. The sequence selected here will be preserved</b>",
           "required": true,
           "type": "form-list",
@@ -97,8 +91,20 @@
           "name": "<b>Compact Display</b><br>Click checkbox to return a compact-formatted PDF (excludes fields that have no data saved and excludes unselected multiple choice options)",
           "required": false,
           "type": "checkbox"
+        },
+        {
+          "key": "print-all-form",
+          "name": "<b>Print all fields in select forms in single page</b><br>If selected, a PDF export request for this form will return data from ALL forms in the event<br>Use the @HIDDEN-PDF action tag to remove fields",
+          "required": false,
+          "type": "form-list"
         }
       ]
+    },
+    {
+      "key": "test",
+      "name": "<b>Check to test print</b>",
+      "required": false,
+      "type": "checkbox"
     }
   ]
 }
