@@ -81,7 +81,7 @@
         },
         {
           "key": "forms-to-merge",
-          "name": "<b>Select the forms you want merged into the PDF. The sequence selected here will be preserved</b>",
+          "name": "<b>Select the forms you want merged into the PDF.</b>",
           "required": true,
           "type": "form-list",
           "repeatable" : true
@@ -94,7 +94,7 @@
         },
         {
           "key": "print-all-form",
-          "name": "<b>Print all fields in select forms in single page</b><br>If selected, a PDF export request for this form will return data from ALL forms in the event<br>Use the @HIDDEN-PDF action tag to remove fields",
+          "name": "<b>Print all fields in selected forms in single form</b><br>If selected, a PDF export request for this form will return data from ALL forms in the event. We recommend using a dummy form, so that the Survey Title can be of your chosing for a merged file.<br>Use the @HIDDEN-PDF action tag to remove fields",
           "required": false,
           "type": "form-list"
         }

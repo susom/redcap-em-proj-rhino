@@ -26,9 +26,9 @@ class ProjRhino extends \ExternalModules\AbstractExternalModule
         //TODO: more comments
 
         //get the config subsettings for pdf printing
-        $current = $this->getSubSettingsForPDFPrint($event_id);
+        $subsettings = $this->getSubSettingsForPDFPrint($event_id);
 
-        if (isset($current)) {
+        if (isset($subsettings)) {
 
             //change request: print after every form
             //1. If trigger form is blank (print after every survey)
@@ -39,19 +39,19 @@ class ProjRhino extends \ExternalModules\AbstractExternalModule
             //
 
             //get list of fields to print
-            $form_list = $current['forms-to-merge'];
+            $form_list = $subsettings['forms-to-merge'];
 
             //get triggering form (blank if at every form, selected if last form)
-            $trigger_form = $current['trigger-form-field'];
+            $trigger_form = $subsettings['trigger-form-field'];
 
             //get print-all-form (dummy form on which to attach the merged form
-            $print_all_form = $current['print-all-form'];
+            $print_all_form = $subsettings['print-all-form'];
 
             if (empty($trigger_form)) {
                 //empty trigger form (print after every survey)
                 //check if form is in list to be printed
                 if (in_array($instrument, $form_list)) {
-                    $this->triggerPDFPrint($record, $event_id, array($instrument), $current['compact-display']);
+                    $this->triggerPDFPrint($record, $event_id, array($instrument), $subsettings['compact-display']);
                 }
             } else {
                 //set trigger form
@@ -61,7 +61,7 @@ class ProjRhino extends \ExternalModules\AbstractExternalModule
                     $this->emDebug("Just saved last instrument, $instrument, in event $event_id and instance $repeat_instance");
                     if (!empty($print_all_form)) {
                         $form_list = array($print_all_form);
-                        $this->triggerPDFPrint($record, $event_id, $form_list, $current['compact-display']);
+                        $this->triggerPDFPrint($record, $event_id, $form_list, $subsettings['compact-display']);
                     } else {
                         $this->emError("Print all form field is not set in the RHINO EM config. No forms will be printed.");
                     }
@@ -84,12 +84,17 @@ class ProjRhino extends \ExternalModules\AbstractExternalModule
             $printAllForm = $subsettings['print-all-form'];
         }
 
-    	//keep only fields in formlist
     	//$this->emDebug(func_get_args());
 
     	if (!empty($printAllForm) && $printAllForm == $instrument) {
 
-    	    //it won't print an empty form so if it's the dmmy form save it
+            //need to filter out only forms that are in the form list
+            $form_list = $subsettings['forms-to-merge'];
+
+            //iterate and create a list of fields that belong to the selected forms
+            $field_list = REDCap::getFieldNames($form_list);
+
+    	    //it won't print an empty form so if it's the dummy form save it
             $save_data = array(
                 'record_id'                           => $record,
                 'redcap_event_name'                   => REDCap::getEventNames(true, false, $event_id),
@@ -114,6 +119,11 @@ class ProjRhino extends \ExternalModules\AbstractExternalModule
 
 			$metadata=[];
 		    foreach ($Proj->metadata as $field_name => $field) {
+
+                if (!in_array($field_name, $field_list)) {
+                    //this field is not in the list so carry on.
+                    continue;
+                }
 			    // Skip field status (could be an option)
 			    if ($hideFormStatus && ($field['field_name'] == $field['form_name'] . "_complete")) continue;
 			    $field['form_name'] = $printAllForm;
@@ -169,12 +179,13 @@ class ProjRhino extends \ExternalModules\AbstractExternalModule
         $result = curl_exec($ch);
         $status = json_decode($result, true);
 
-        $this->emDebug($status);
 
         //return { "error": "asdf"}
         //{"error":"Missing required input(s) - see logs"}
         //{"success":"2 printed for 2 on Ricoh3500_ENT"}
         if ($status["error"]) {
+            $this->emError($status);
+
             REDCap::logEvent(
                 "Error printing PDF. ",  //action
                 "Error printing pdf with this error".$status['error'],
@@ -259,6 +270,8 @@ class ProjRhino extends \ExternalModules\AbstractExternalModule
     /***************************************************************************************************************** */
     function testCups($data) {
         global $Proj;
+        $printerName = "TestPRINTER";
+
         $test = $this->getProjectSetting('test');
 
 
