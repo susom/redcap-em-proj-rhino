@@ -19,8 +19,7 @@
   "framework-version": 5,
 
   "permissions": [
-    "redcap_survey_complete",
-    "redcap_pdf"
+    "redcap_save_record"
   ],
   "links": {
     "project": [
@@ -48,57 +47,16 @@
       "type": "text"
     },
     {
-      "key": "print-all-hide-form-status",
-      "name": "<b>Print All Form - Hide form-status fields</b>",
+      "key": "trigger-form",
+      "name": "<b>Select the form to trigger the CUPS print</b>",
       "required": false,
-      "type": "checkbox"
+      "type": "form-list"
     },
     {
-      "key": "pdf-events",
-      "name": "<b>PDF Events</b><br>Repeating subsettings to define set of forms to print for each event",
+      "key": "pdf-field",
+      "name": "<b>PDF Save Field</b><br><br>Select the field where the PDF to be printed is saved.",
       "required": false,
-      "type": "sub_settings",
-      "repeatable": true,
-      "sub_settings": [
-        {
-          "key": "pdf-merge-print-desc",
-          "name": "<div class='alert alert-warning'><h3>PDF Merge Print Settings</h3><br>Select the event and form names that you want merged in the PDF file.</div>",
-          "required": false,
-          "type": "descriptive"
-        },
-        {
-          "key": "trigger-form-field",
-          "name": "<b>Select the form to trigger the print (most likely the last in the series for the event.</b><br><br>Leave blank to print the forms as they complete. Selecting one will print the entire list of selected forms in one print command when this form is completed.",
-          "required": false,
-          "type": "form-list",
-          "repeatable" : false
-        },
-        {
-          "key": "event-field",
-          "name": "<b>Select the Visit event for which you print the PDF form (e.g. visit_arm_1)</b>",
-          "required": true,
-          "type": "event-list"
-        },
-        {
-          "key": "forms-to-merge",
-          "name": "<b>Select the forms you want merged into the PDF.</b>",
-          "required": true,
-          "type": "form-list",
-          "repeatable" : true
-        },
-        {
-          "key": "compact-display",
-          "name": "<b>Compact Display</b><br>Click checkbox to return a compact-formatted PDF (excludes fields that have no data saved and excludes unselected multiple choice options)",
-          "required": false,
-          "type": "checkbox"
-        },
-        {
-          "key": "print-all-form",
-          "name": "<b>Print all fields in selected forms in single form</b><br>If selected, a PDF export request for this form will return data from ALL forms in the event. We recommend using a dummy form, so that the Survey Title can be of your chosing for a merged file.<br>Use the @HIDDEN-PDF action tag to remove fields",
-          "required": false,
-          "type": "form-list"
-        }
-      ]
+      "type": "field-list"
     },
     {
       "key": "test",

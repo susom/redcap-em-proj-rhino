@@ -19,150 +19,89 @@ class ProjRhino extends \ExternalModules\AbstractExternalModule
     /* HOOK METHODS                                                                                                    */
     /***************************************************************************************************************** */
 
-    //only print if the survey is complete (since the last survey uses "one section per page'
-    //public function redcap_save_record($project_id, $record = NULL, $instrument, $event_id, $group_id = NULL, $survey_hash = NULL, $response_id = NULL, $repeat_instance) {
-    public function redcap_survey_complete($project_id, $record = NULL, $instrument, $event_id, $group_id = NULL, $survey_hash = NULL, $response_id = NULL, $repeat_instance) {
-
+    //change: since using the PDF save field, convert back to redcap_save_record
+    //public function redcap_save_record($project_id, $record = NULL, $instrument, $event_id, $group_id = NULL, $survey_hash = NULL, $response_id = NULL, $repeat_instance=1) {
+    public function redcap_save_record( $project_id, $record, $instrument, $event_id, $group_id = NULL, $survey_hash = NULL, $response_id = NULL, $repeat_instance = 1) {
+    //public function redcap_survey_complete($project_id, $record = NULL, $instrument, $event_id, $group_id = NULL, $survey_hash = NULL, $response_id = NULL, $repeat_instance) {
+        //$this->emDebug("================== ".__FUNCTION__. "  : " . $instrument);
         //TODO: more comments
 
-        //get the config subsettings for pdf printing
-        $subsettings = $this->getSubSettingsForPDFPrint($event_id);
+        //check if it is the PDF form that has been saved?
+        $trigger_form = $this->getProjectSetting('trigger-form', $project_id);
+        if ($trigger_form != $instrument) return;
 
-        if (isset($subsettings)) {
+        $this->emDebug("Just saved triggering instrument, $instrument, in event $event_id and instance $repeat_instance");
 
-            //change request: print after every form
-            //1. If trigger form is blank (print after every survey)
-            //    a. check if form is in list to be printed
-            //    b. print
-            //2. If trigger form is not blank (print all surveys  after that survey is printed)
-            //    a. send form entered in print-all-form field (this will print a single conjoined form
-            //
+        $pdf_field = $this->getProjectSetting('pdf-field', $project_id);
 
-            //get list of fields to print
-            $form_list = $subsettings['forms-to-merge'];
-
-            //get triggering form (blank if at every form, selected if last form)
-            $trigger_form = $subsettings['trigger-form-field'];
-
-            //get print-all-form (dummy form on which to attach the merged form
-            $print_all_form = $subsettings['print-all-form'];
-
-            if (empty($trigger_form)) {
-                //empty trigger form (print after every survey)
-                //check if form is in list to be printed
-                if (in_array($instrument, $form_list)) {
-                    $this->triggerPDFPrint($record, $event_id, array($instrument), $subsettings['compact-display']);
-                }
-            } else {
-                //set trigger form
-                //check if trigger matches current instrument
-                //send print-all-form to be printed
-                if ($instrument == $trigger_form) {
-                    $this->emDebug("Just saved last instrument, $instrument, in event $event_id and instance $repeat_instance");
-                    if (!empty($print_all_form)) {
-                        $form_list = array($print_all_form);
-                        $this->triggerPDFPrint($record, $event_id, $form_list, $subsettings['compact-display']);
-                    } else {
-                        $this->emError("Print all form field is not set in the RHINO EM config. No forms will be printed.");
-                    }
-                }
-
-            }
-
+        if (!empty($pdf_field)) {
+            $this->triggerPDFPrint($record, $event_id, $pdf_field);
         }
 
     }
-
-    // Hijeck the pdf
-	public function redcap_pdf($project_id, $metadata, $data, $instrument, $record, $event_id, $instance = 1) {
-
-        //get the subsettings for this event
-        $subsettings = $this->getSubSettingsForPDFPrint($event_id);
-
-        //if subsetting is set, then check the print-all-forms field
-        if (isset($subsettings)) {
-            $printAllForm = $subsettings['print-all-form'];
-        }
-
-    	//$this->emDebug(func_get_args());
-
-    	if (!empty($printAllForm) && $printAllForm == $instrument) {
-
-            //need to filter out only forms that are in the form list
-            $form_list = $subsettings['forms-to-merge'];
-
-            //iterate and create a list of fields that belong to the selected forms
-            $field_list = REDCap::getFieldNames($form_list);
-
-    	    //it won't print an empty form so if it's the dummy form save it
-            $save_data = array(
-                'record_id'                           => $record,
-                'redcap_event_name'                   => REDCap::getEventNames(true, false, $event_id),
-                $instrument . '_complete'             => 2
-            );
-            $status = REDCap::saveData('json', json_encode(array($save_data)));
-
-
-		    // We need to pull ALL data for this event
-		    $params = [
-			    'project_id' => $project_id,
-			    'records' => $record,
-			    'events' => $event_id
-		    ];
-		    $data = \REDCap::getData($params);
-
-		    $hideFormStatus = $this->getProjectSetting("print-all-hide-form-status");
-
-		    // We need to pull all metadata for fields to include
-		    global $Proj;
-
-
-			$metadata=[];
-		    foreach ($Proj->metadata as $field_name => $field) {
-
-                if (!in_array($field_name, $field_list)) {
-                    //this field is not in the list so carry on.
-                    continue;
-                }
-			    // Skip field status (could be an option)
-			    if ($hideFormStatus && ($field['field_name'] == $field['form_name'] . "_complete")) continue;
-			    $field['form_name'] = $printAllForm;
-			    $metadata[] = $field;
-		    }
-
-	    }
-    	return array('metadata'=>$metadata, 'data'=>$data, 'instrument'=>$instrument);
-	}
-
 
     /*******************************************************************************************************************/
     /* HELPER METHODS                                                                                                    */
     /***************************************************************************************************************** */
 
-    function triggerPDFPrint($record,$event_id, $form_list, $compact_display)
+    /**
+     * trigger a PDF print in an external printer using the cups print EM
+     * Here are the expected POST parameters:
+     *     "action": "print_file_field",
+     *     "record_id": "123",
+     *     "event_name": "event_1_arm_1",
+     *     "field_name": "file_upload_field"
+     *
+     * @param $record
+     * @param $event_id
+     * @param $form_list
+     * @param $compact_display
+     */
+    function triggerPDFPrint($record,$event_id, $pdf_field)
     {
 
         $event_name = REDCap::getEventNames(true, false,$event_id);
 
         //call url to trigger print passing in array of instruments ($form_list)
-        $this->emDebug("Triggering the PDF print for record $record in event $event_id with compact_display set to $compact_display", $form_list);
-        //$url = 'http://7d9adf5c5ede.ngrok.io';
-        $url = $this->getProjectSetting('url');
+        $this->emDebug("Triggering the PDF print for record $record in event $event_id", $pdf_field);
+
+        $url = $this->getProjectSetting('url'); //cups relay URL
         $test = $this->getProjectSetting('test');
 
         $data = array(
+            'action'    => "print_file_field",
             'record_id' => $record,
             'event_name' => $event_name,
-            'instruments' => $form_list,
-            'compact_display' => $compact_display);
-
-        if ($test) {
-            $this->emDebug("TESTING PRINT WITH DATA", $data);
-            $this->testCups($data);
-        }
+            'field_name' => $pdf_field);
 
         //url-ify the data for the POST
         $data_string = http_build_query($data);
+
+/**
+        //open connection
+        $curl = curl_init();
+
+        //set the url, number of POST vars, POST data
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => $data
+        ));
+
+        //execute post
+        $result = curl_exec($curl);
+        $status = json_decode($result, true);
+
+        curl_close($curl);
+
+        $this->emDebug($status);
+*/
 
         //open connection
         $ch = curl_init();
@@ -174,16 +113,15 @@ class ProjRhino extends \ExternalModules\AbstractExternalModule
 
         //So that curl_exec returns the contents of the cURL; rather than echoing it
         curl_setopt($ch,CURLOPT_RETURNTRANSFER, true);
-
         //execute post
         $result = curl_exec($ch);
         $status = json_decode($result, true);
+        $this->emDebug($status . " from " . $url);
+        curl_close($ch);
 
 
-        //return { "error": "asdf"}
-        //{"error":"Missing required input(s) - see logs"}
         //{"success":"2 printed for 2 on Ricoh3500_ENT"}
-        if ($status["error"]) {
+        if ($status["error"] || ($status == null)) {
             $this->emError($status);
 
             REDCap::logEvent(
@@ -195,54 +133,13 @@ class ProjRhino extends \ExternalModules\AbstractExternalModule
             );
         } else {
             REDCap::logEvent(
-                    "PDF printed.",  //action
-                    $status['success'],
-                    NULL, //sql optional
-                    $record,//record optional
-                    $event_id
+                "PDF printed.",  //action
+                $status['success'],
+                NULL, //sql optional
+                $record,//record optional
+                $event_id
             );
         }
-    }
-
-    function triggerPDFPrint2($record,$event_id, $form_list, $compact_display)
-    {
-
-        $record = "2";
-
-        $event_name = REDCap::getEventNames(true, false,$event_id);
-
-        //call url to trigger print passing in array of instruments ($form_list)
-        $this->emDebug("Triggering the PDF print for record $record in event $event_id with compact_display set to $compact_display");
-        $url = 'http://7d9adf5c5ede.ngrok.io';
-        $data = array(
-            'record_id' => $record,
-            'event_name' => $event_name,
-            'instruments' => $form_list,
-            'compact_display' => $compact_display);
-
-// use key 'http' even if you send the request to https://...
-        $options = array(
-            'http' => array(
-                'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
-                'method'  => 'POST',
-                'content' => http_build_query($data)
-            )
-        );
-        $context  = stream_context_create($options);
-        $result = file_get_contents($url, false, $context);
-        $result2 = file_get_contents($url, false, $context);
-        //return { "error": "asdf"}
-        //{"error":"Missing required input(s) - see logs"}
-        //sucess: {"success":"2 printed for 2 on Ricoh3500_ENT"}
-        if ($result === FALSE) {
-            $this->emError("There was an error printing the PDF for record $record in event_name $event_name");
-            $this->emDebug($result);
-        }
-        $this->emDebug($result, $context, json_decode($result));
-
-        echo($result);
-
-        var_dump($context);
     }
 
     function getSubSettingsForPDFPrint($event_id) {
@@ -252,9 +149,7 @@ class ProjRhino extends \ExternalModules\AbstractExternalModule
         foreach ($trigger_sub_events as $key => $sub) {
             $setting = array(
                 'trigger-form-field' => $sub['trigger-form-field'],
-                'forms-to-merge'     => $sub['forms-to-merge'],
-                'compact-display'    => $sub['compact-display'],
-                'print-all-form'     => $sub['print-all-form']
+                'pdf-field'          => $sub['pdf-field']
             );
             $check_forms[$sub['event-field']] = $setting;
         }
